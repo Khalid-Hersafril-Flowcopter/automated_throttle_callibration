@@ -70,7 +70,7 @@ while not keyboard_interrupt_flag:
 
             datasets.append((servo_setpoint, throttle_percentage))
 
-            if servo_setpoint > 60:
+            if servo_setpoint > servo_saturation_value:
                 print("Servo saturation value reaced, Initialised Shutdown")
                 raise KeyboardInterrupt
 
