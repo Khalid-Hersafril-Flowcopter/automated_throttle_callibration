@@ -6,14 +6,16 @@ os.system('sudo ifconfig can0 up') # Enable can0
 
 bus = can.interface.Bus(channel = 'can0', bustype = 'socketcan')# socketcan_native
 
+# TODO(Khalid): Create a config file for this?
+# Config
+id_of_interest = '0x11'
+servo_saturation_value = 60
+
 keyboard_interrupt_flag = False
 
 while not keyboard_interrupt_flag:
     try:
         message = bus.recv(10.0)
-        
-        # TODO(Khalid): Create a config file for this?
-        id_of_interest = '0x11'
         
         # This returns the int value of the id
         message_id = message.arbitration_id
@@ -24,6 +26,7 @@ while not keyboard_interrupt_flag:
         if message_id_hex != id_of_interest:
             print("Ignoring")
             continue
+
         else:
                 
             # Extract the data from the message
@@ -57,6 +60,11 @@ while not keyboard_interrupt_flag:
             servo_setpoint = servo_setpoint_int / 100
 
             print(f"Servo Setpoint: {servo_setpoint} | Throttle_percentage: {throttle_percentage}")
+
+            if servo_setpoint > 60:
+                print("Servo saturation value reaced, Initialised Shutdown")
+                raise KeyboardInterrupt
+
             if message is None:
                 print('Timeout occurred, no message received.')
         
