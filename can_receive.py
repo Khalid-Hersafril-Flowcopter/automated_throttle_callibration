@@ -8,7 +8,7 @@ now = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M")
 # Config
 id_of_interest = '0x11'
 servo_saturation_value = 60
-csv_path = f'datasets_{now}'
+csv_path = f'datasets/datasets_{now}.csv'
 
 # Setup can0 channel
 os.system('sudo ip link set can0 up type can bitrate 125000')
@@ -85,5 +85,21 @@ while not keyboard_interrupt_flag:
 
 print("Shutting down can0 socket")
 os.system('sudo ifconfig can0 down')
+
+print("Writing data into csv file...")
+
+with open(csv_path, 'w', newline='') as csvfile:
+
+    writer = csv.writer(csvfile)
+
+    writer.writerow(['servo_setpoint', 'throttle_feedback'])
+
+    for row in datasets:
+        writer.writerow(row)
+
+    print(f"All data saved into {csv_path}")
+
+print("Closing file...")
+
 
 
