@@ -1,17 +1,24 @@
 import os
 import can
+import csv
+import datetime
 
+now = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M")
+# TODO(Khalid): Create a config file for this?
+# Config
+id_of_interest = '0x11'
+servo_saturation_value = 60
+csv_path = f'datasets_{now}'
+
+# Setup can0 channel
 os.system('sudo ip link set can0 up type can bitrate 125000')
 os.system('sudo ifconfig can0 up') # Enable can0 
 
 bus = can.interface.Bus(channel = 'can0', bustype = 'socketcan')# socketcan_native
 
-# TODO(Khalid): Create a config file for this?
-# Config
-id_of_interest = '0x11'
-servo_saturation_value = 60
-
 keyboard_interrupt_flag = False
+
+datasets = []
 
 while not keyboard_interrupt_flag:
     try:
@@ -61,6 +68,8 @@ while not keyboard_interrupt_flag:
 
             print(f"Servo Setpoint: {servo_setpoint} | Throttle_percentage: {throttle_percentage}")
 
+            datasets.append((servo_setpoint, throttle_percentage))
+
             if servo_setpoint > 60:
                 print("Servo saturation value reaced, Initialised Shutdown")
                 raise KeyboardInterrupt
@@ -76,3 +85,5 @@ while not keyboard_interrupt_flag:
 
 print("Shutting down can0 socket")
 os.system('sudo ifconfig can0 down')
+
+
