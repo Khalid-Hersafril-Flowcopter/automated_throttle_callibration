@@ -2,13 +2,19 @@ import os
 import can
 import csv
 import datetime
+from scipy.io import savemat
+import numpy as np
 
+
+# TODO(Khalid): Create an arg parser, where user can give path on cli
+# TODO(Khalid): Create a log file for this, so that it is easy to debug on different level
 now = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M")
 # TODO(Khalid): Create a config file for this?
 # Config
 id_of_interest = '0x11'
 servo_saturation_value = 60
 csv_path = f'datasets/datasets_{now}.csv'
+mat_path = f'datasets/datasets_{now}.mat'
 
 # Setup can0 channel
 os.system('sudo ip link set can0 up type can bitrate 125000')
@@ -19,6 +25,8 @@ bus = can.interface.Bus(channel = 'can0', bustype = 'socketcan')# socketcan_nati
 keyboard_interrupt_flag = False
 
 datasets = []
+throttle_datasets = []
+servo_setpoint_datasets = []
 
 while not keyboard_interrupt_flag:
     try:
@@ -69,6 +77,8 @@ while not keyboard_interrupt_flag:
             print(f"Servo Setpoint: {servo_setpoint} | Throttle_percentage: {throttle_percentage}")
 
             datasets.append((servo_setpoint, throttle_percentage))
+            throttle_datasets.append(throttle_percentage)
+            servo_setpoint_datasets.append(servo_setpoint)
 
             if servo_setpoint > servo_saturation_value:
                 print("Servo saturation value reaced, Initialised Shutdown")
@@ -86,20 +96,24 @@ while not keyboard_interrupt_flag:
 print("Shutting down can0 socket")
 os.system('sudo ifconfig can0 down')
 
+# Check if datasets are of the same length
+# This is to ensure that each datasets has its pair
+assert len(servo_setpoint_datasets) == len(throttle_datasets), f"Servo Setpoints ({servo_setpoint_datasets}) and Throttle datasets ({throttle_datasets}) is not of the same length"
+
+servo_setpoint_datasets = np.array(list(map(float, servo_setpoint_datasets)))
+throttle_datasets = np.array(list(map(float, throttle_datasets)))
+
+step = 0.01
+interpolated_throttle_feedback = np.arange(0, 100 + step, step, dtype='float')
+interpolated_servo_setpoint = np.interp(interpolated_throttle_feedback, throttle_datasets, servo_setpoint_datasets)
+
+interpolated_datasets =  np.column_stack((interpolated_throttle_feedback, interpolated_servo_setpoint))
+
 print("Writing data into csv file...")
+# Store populated datasets into csv file
+np.savetxt(csv_path, interpolated_datasets, delimiter=',')
+print("Datasets saved in .csv format at {csv_path}")
 
-with open(csv_path, 'w', newline='') as csvfile:
-
-    writer = csv.writer(csvfile)
-
-    writer.writerow(['servo_setpoint', 'throttle_feedback'])
-
-    for row in datasets:
-        writer.writerow(row)
-
-    print(f"All data saved into {csv_path}")
-
-print("Closing file...")
-
-
-
+print("Writing into .mat file...")
+savemat(mat_path, {'datasets': interpolated_datasets}, appendmat=False)
+print("Datasets saved in .mat format at {mat_path}")
