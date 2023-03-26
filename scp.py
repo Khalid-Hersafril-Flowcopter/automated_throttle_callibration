@@ -5,11 +5,12 @@ import logging
 ip_addr = "192.168.0.63"
 user = "khalidowlwalid"
 ssh_port = 22
+logger_name = 'throttle_callibrator'
 
 # Set up the scp command with the appropriate arguments
 
 # Create a logger object with the desired name
-logger = logging.getLogger('my_logger')
+logger = logging.getLogger(logger_name)
 
 logging.getLogger().setLevel(logging.NOTSET)
 
@@ -17,7 +18,7 @@ logging.getLogger().setLevel(logging.NOTSET)
 file_handler = logging.FileHandler('my_log_file.log')
 
 # Create a formatter and set it on the file handler
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter(f'{logger.name}: %(asctime)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 
 console_handler = logging.StreamHandler()
