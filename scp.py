@@ -6,7 +6,7 @@ user = "khalidowlwalid"
 ssh_port = 22
 # Set up the scp command with the appropriate arguments
 
-scp_command = f"scp test.txt {user}@{ip_addr}:~/Downloads/"
+scp_command = f"scp -P {ssh_port} test.txt {user}@{ip_addr}:~/Downloads/"
 
 try:
     # Start the scp command using pexpect
@@ -16,16 +16,24 @@ try:
     child.expect("password:")
 
     # Enter the password
-    child.sendline("your_password")
+    child.sendline("jellybean123")
 
     # Wait for the transfer to complete
     child.expect(pexpect.EOF)
 
-    # Print the output
-    print(child.before)
+    # Useful for debugging
+    print(child.before.decode())
+
+    file_transfer_flag = "100%" in child.before.decode()
+
+    if file_transfer_flag:
+        print("Successfully transferred file..")
+    else:
+        print("File not transferred")
 
 except pexpect.exceptions.TIMEOUT:
     print("Connection timed out")
+    print("Check if your password has been correctly set")
 
 except pexpect.exceptions.EOF:
     args = child.args
