@@ -5,23 +5,27 @@ import logging
 ip_addr = "192.168.0.63"
 user = "khalidowlwalid"
 ssh_port = 22
+
 # Set up the scp command with the appropriate arguments
 
-# Define a logger object with the desired name
+# Create a logger object with the desired name
 logger = logging.getLogger('my_logger')
 
-# Set the logging level for the logger
-logger.setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.NOTSET)
 
-# Create a console handler and set its logging level
+# Create a file handler and set its logging level
+file_handler = logging.FileHandler('my_log_file.log')
+
+# Create a formatter and set it on the file handler
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-
-# Create a formatter and set it on the console handler
-formatter = logging.Formatter('%(asctime)s [%(levelname)s]:  %(message)s')
+console_handler.setLevel(logging.NOTSET)
 console_handler.setFormatter(formatter)
 
-# Add the console handler to the logger
+# Add the file handler to the logger object
+logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
 scp_command = f"scp -P {ssh_port} test.txt {user}@{ip_addr}:~/Downloads/"
@@ -40,7 +44,11 @@ try:
     child.expect(pexpect.EOF)
 
     # Useful for debugging
-    logging.info(child.before.decode())
+    logger.info("Hello")
+    logger.info(child.before.decode())
+    logger.error("Error")
+    logger.warning("test")
+    logger.debug("debug")
 
     file_transfer_flag = "100%" in child.before.decode()
 
