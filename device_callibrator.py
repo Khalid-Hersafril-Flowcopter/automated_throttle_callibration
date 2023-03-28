@@ -171,6 +171,10 @@ logger.info("Writing into .mat file...")
 savemat(mat_path, {'datasets': interpolated_datasets}, appendmat=False)
 logger.info(f"Datasets saved in .mat format at {mat_path}")
 
+#####################################
+#            FILE TRANSFER          #
+#####################################
+
 # Start the scp command using pexpect
 scp_command = f"scp -P {ssh_port} {mat_path} {user}@{ip_addr}:{saved_file_path}"
 child = pexpect.spawn(scp_command)
