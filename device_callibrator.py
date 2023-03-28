@@ -54,8 +54,12 @@ bus = can.interface.Bus(channel = 'can0', bustype = 'socketcan')# socketcan_nati
 keyboard_interrupt_flag = False
 
 datasets = []
+temp_servo_mem_store = []
+temp_throttle_mem_store = []
 throttle_datasets = []
 servo_setpoint_datasets = []
+servo_setpoint_prev = None
+start_daq_flag = False
 
 while not keyboard_interrupt_flag:
     try:
@@ -103,18 +107,38 @@ while not keyboard_interrupt_flag:
             throttle_percentage = throttle_percentage_int / 100
             servo_setpoint = servo_setpoint_int / 100
 
-            logger.info(f"Servo Setpoint: {servo_setpoint} | Throttle_percentage: {throttle_percentage}")
+            # Ensure that all data collection starts with servo setpoint at 1
+            # If not, the interpolated data will be wrong and useless
+            if servo_setpoint < 1:
+                start_daq_flag = True
 
-            datasets.append((servo_setpoint, throttle_percentage))
-            throttle_datasets.append(throttle_percentage)
-            servo_setpoint_datasets.append(servo_setpoint)
+            if start_daq_flag:
 
-            if servo_setpoint > servo_saturation_value:
-                logger.info("Servo saturation value reaced, Initialised Shutdown")
-                raise KeyboardInterrupt
+                logger.info(f"Servo Setpoint: {servo_setpoint} | Throttle_percentage: {throttle_percentage}")
+                if servo_setpoint_prev is  None:
+                    servo_setpoint_prev = servo_setpoint
 
-            if message is None:
-                logger.info('Timeout occurred, no message received.')
+                if servo_setpoint == servo_setpoint_prev:
+                    temp_throttle_mem_store.append(throttle_percentage)
+                else:
+                    throttle_percentage_average = sum(temp_throttle_mem_store)/len(temp_throttle_mem_store)
+                    datasets.append((servo_setpoint, throttle_percentage))
+                    throttle_datasets.append(throttle_percentage)
+                    servo_setpoint_datasets.append(servo_setpoint)
+
+
+                servo_setpoint_prev = servo_setpoint
+
+                if servo_setpoint > servo_saturation_value:
+                    logger.info("Servo saturation value reaced, Initialised Shutdown")
+                    raise KeyboardInterrupt
+
+                if message is None:
+                    logger.info('Timeout occurred, no message received.')
+            else:
+                # TODO (Khalid): Find a way to log and tell that no data is currently collected. Current implementation will flood the log data which is useless
+                logger.info("Servo setpoint is not starting at 1, so no data will be collected.")
+                continue
 
     # If user interrupts using keyboard, shutdown or it needs to be if it reaches the saturation
     # value of the servo setpoint
@@ -148,7 +172,7 @@ savemat(mat_path, {'datasets': interpolated_datasets}, appendmat=False)
 logger.info(f"Datasets saved in .mat format at {mat_path}")
 
 # Start the scp command using pexpect
-scp_command = f"scp -P {ssh_port} {mat_path} {user}@{ip_addr}:{saved_file_path}"
+scp_command = f"scp -P {ssh_port} {csv_path} {user}@{ip_addr}:{saved_file_path}"
 child = pexpect.spawn(scp_command)
 
 login_success_flag = False
