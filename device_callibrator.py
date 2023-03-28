@@ -172,12 +172,11 @@ savemat(mat_path, {'datasets': interpolated_datasets}, appendmat=False)
 logger.info(f"Datasets saved in .mat format at {mat_path}")
 
 # Start the scp command using pexpect
-scp_command = f"scp -P {ssh_port} {csv_path} {user}@{ip_addr}:{saved_file_path}"
+scp_command = f"scp -P {ssh_port} {mat_path} {user}@{ip_addr}:{saved_file_path}"
 child = pexpect.spawn(scp_command)
 
 login_success_flag = False
 forced_exit_flag = False
-
 attempts_left = 3
 
 while not login_success_flag and not forced_exit_flag:
@@ -190,6 +189,9 @@ while not login_success_flag and not forced_exit_flag:
         user_password = getpass.getpass(f"{user}@{ip_addr}'s password:")
         child.sendline(user_password)
 
+        # Checks for different types of prompt
+        # Note: The index is according to the prompt's position in the list
+        # Eg Permission denied is the 1st element
         index_flag = child.expect([f"datasets_{now}", "Permission denied", "password:"])
 
         if index_flag == 0:
