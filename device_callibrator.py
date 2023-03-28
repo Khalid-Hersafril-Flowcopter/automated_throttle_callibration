@@ -4,6 +4,9 @@ import csv
 import datetime
 from scipy.io import savemat
 import numpy as np
+import logging
+import pexpect
+import getpass
 
 # TODO(Khalid): Create an arg parser, where user can give path on cli
 # TODO(Khalid): Create a log file for this, so that it is easy to debug on different level
@@ -16,11 +19,11 @@ csv_path = f'datasets/datasets_{now}.csv'
 mat_path = f'datasets/datasets_{now}.mat'
 
 # Config for scp
-ip_addr = "192.168.0.63"
-user = "khalidowlwalid"
+ip_addr = "192.168.0.204"
+user = "User"
 ssh_port = 22
 logger_name = 'throttle_callibrator'
-saved_file_path = '~/Documents/'
+saved_file_path = 'C:/Users/User/Documents/Misc'
 
 # Setup the logger for the session
 logger = logging.getLogger(logger_name)
@@ -138,21 +141,22 @@ interpolated_datasets =  np.column_stack((interpolated_throttle_feedback, interp
 logger.info("Writing data into csv file...")
 # Store populated datasets into csv file
 np.savetxt(csv_path, interpolated_datasets, delimiter=',')
-logger.info("Datasets saved in .csv format at {csv_path}")
+logger.info(f"Datasets saved in .csv format at {csv_path}")
 
 logger.info("Writing into .mat file...")
 savemat(mat_path, {'datasets': interpolated_datasets}, appendmat=False)
-logger.info("Datasets saved in .mat format at {mat_path}")
+logger.info(f"Datasets saved in .mat format at {mat_path}")
 
 # Start the scp command using pexpect
 scp_command = f"scp -P {ssh_port} {mat_path} {user}@{ip_addr}:{saved_file_path}"
 child = pexpect.spawn(scp_command)
 
 login_success_flag = False
+forced_exit_flag = False
 
-failed_attempts = 0
+attempts_left = 3
 
-while not login_success_flag:
+while not login_success_flag and not forced_exit_flag:
     try:
 
         # Wait for the password prompt
@@ -162,16 +166,16 @@ while not login_success_flag:
         user_password = getpass.getpass(f"{user}@{ip_addr}'s password:")
         child.sendline(user_password)
 
-        index_flag = child.expect([mat_path, "Permission denied", "password:"])
+        index_flag = child.expect([f"datasets_{now}", "Permission denied", "password:"])
 
         if index_flag == 0:
             logger.info("Login successful!")
             login_success_flag = True
         elif index_flag == 1 or index_flag == 2:
-            logger.error("Permission denied. Wrong password. Please try again")
-            failed_attempts += 1
+            attempts_left -= 1
+            logger.error(f"Permission denied. Wrong password. You have {attempts_left} left. Please try again.")
 
-            if failed_attempts == 3:
+            if attempts_left == 0:
                 logger.error(f"Maximum number of attempts reached. File will not be saved to {user}@{ip_addr}'s {saved_file_path}")
                 logger.info(f"User will need to download the file locally from the Raspberry Pi. The full path of the file can be found in {mat_path}.")
                 raise KeyboardInterrupt
@@ -217,6 +221,8 @@ while not login_success_flag:
     except pexpect.exceptions.EOF:
         before = str(child.before)
         logger.info(child)
+        forced_exit_flag = True
+        logger.error("Forced exit.")
 
         if "connection refused" in before.lower():
             logger.error(f"Connect to host {ip_addr} at port {ssh_port}: Connection refused. Please check if you have enabled your port is enabled.")
