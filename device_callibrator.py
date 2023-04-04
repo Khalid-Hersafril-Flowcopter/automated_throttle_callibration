@@ -7,6 +7,11 @@ import numpy as np
 import logging
 import pexpect
 import getpass
+from RPLCD import *
+from time import sleep
+from RPLCD.i2c import CharLCD
+
+lcd = CharLCD('PCF8574', 0x27)
 
 # TODO(Khalid): Create an arg parser, where user can give path on cli
 # TODO(Khalid): Create a log file for this, so that it is easy to debug on different level
@@ -46,6 +51,8 @@ logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
 # Setup can0 channel
+lcd.cursor_pos = (0,0)
+lcd.write_string('Initializing CAN interface..')
 os.system('sudo ip link set can0 up type can bitrate 125000')
 os.system('sudo ifconfig can0 up') # Enable can0
 
