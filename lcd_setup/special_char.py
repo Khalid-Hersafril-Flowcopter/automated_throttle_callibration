@@ -1,7 +1,20 @@
-#!/usr/bin/env python3
-import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'lcd_setup')))
-
-def test():
-    print("Hello world!")
+Locked = (
+  0b00000,
+  0b01110,
+  0b10001,
+  0b10001,
+  0b11111,
+  0b11111,
+  0b11011,
+  0b11111
+)
+Unlocked = (
+  0b00000,
+  0b01110,
+  0b00001,
+  0b00001,
+  0b11111,
+  0b11111,
+  0b11011,
+  0b11111
+)

@@ -1,9 +1,11 @@
 import os
 import sys
 
-path = os.path.join(os.getcwd(), '..', 'lcd_setup')
+# Hacky way to get import working
+path = os.path.join(os.path.dirname(__file__), '..', 'lcd_setup')
 sys.path.insert(1, path)
+print(path)
 
 import special_char
 
-special_char.test()
+print(special_char.Unlocked)
