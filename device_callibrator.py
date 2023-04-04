@@ -179,6 +179,7 @@ logger.info(f"Datasets saved in .mat format at {mat_path}")
 scp_command = f"scp -P {ssh_port} {mat_path} {user}@{ip_addr}:{saved_file_path}"
 child = pexpect.spawn(scp_command)
 
+# Flags used
 login_success_flag = False
 forced_exit_flag = False
 attempts_left = 3
