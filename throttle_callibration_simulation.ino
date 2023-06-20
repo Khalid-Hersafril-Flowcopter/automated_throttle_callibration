@@ -53,6 +53,9 @@ int l  = sizeof(data)/sizeof(data[0]);
 int temp = 0;
 int update = 0;
 static int servo_setpoint_prev = 1;
+unsigned long start_time;
+unsigned long timer_end = 4000; // ms
+unsigned long curr_time;
 
 void loop() {
 
@@ -98,15 +101,15 @@ void loop() {
     CAN.MCP_CAN::sendMsgBuf(0x11, 0, 8, data);
     delay(2);                       // send data per 100ms
 
-  if (update == 3) {
-    n += 1;
-    update = 0;
-
-  } else if (n == l){
-    n = 0;
-  } else {
-    update += 1;
+  curr_time = millis();
+    
+  if (curr_time - start_time > timer_end){
+      n += 1;
   }
+
+  if (n == l) {
+      n = 0;
+  } 
 
 }
 
