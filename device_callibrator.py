@@ -7,6 +7,7 @@ import numpy as np
 import logging
 import pexpect
 import getpass
+import time
 
 # TODO(Khalid): Create an arg parser, where user can give path on cli
 # TODO(Khalid): Create a log file for this, so that it is easy to debug on different level
@@ -61,6 +62,11 @@ servo_setpoint_datasets = []
 servo_setpoint_prev = None
 start_daq_flag = False
 
+# Temp
+deadband = 0.5
+starting_setpoint = 5
+timer_flag = False
+
 while not keyboard_interrupt_flag:
     try:
         message = bus.recv(10.0)
@@ -109,7 +115,7 @@ while not keyboard_interrupt_flag:
 
             # Ensure that all data collection starts with servo setpoint at 1
             # If not, the interpolated data will be wrong and useless
-            if servo_setpoint < 1:
+            if servo_setpoint < starting_setpoint:
                 start_daq_flag = True
 
             if start_daq_flag:
@@ -118,14 +124,28 @@ while not keyboard_interrupt_flag:
                 if servo_setpoint_prev is  None:
                     servo_setpoint_prev = servo_setpoint
 
-                if servo_setpoint == servo_setpoint_prev:
-                    temp_throttle_mem_store.append(throttle_percentage)
-                else:
-                    throttle_percentage_average = sum(temp_throttle_mem_store)/len(temp_throttle_mem_store)
-                    datasets.append((servo_setpoint, throttle_percentage))
-                    throttle_datasets.append(throttle_percentage)
-                    servo_setpoint_datasets.append(servo_setpoint)
 
+                temp_servo_mem_store.append(servo_setpoint)
+                servo_setpoint_avg = sum(temp_servo_mem_store)/len(temp_servo_mem_store)
+
+                if abs(servo_setpoint - servo_setpoint_avg) < deadband:
+                    if not timer_flag:
+                        start_timer = time.time()
+                        timer_flag = True
+
+                    if (time.time() - start_timer) > 1:
+                        temp_throttle_mem_store.append(throttle_percentage)
+
+                else:
+                    throttle_percentage_avg = sum(temp_throttle_mem_store)/len(temp_throttle_mem_store)
+                    datasets.append((servo_setpoint_avg, throttle_percentage_avg))
+                    throttle_datasets.append(throttle_percentage_avg)
+                    servo_setpoint_datasets.append(servo_setpoint_avg)
+
+                    # Clear mem storage
+                    temp_throttle_mem_store = []
+                    temp_servo_mem_store = []
+                    timer_flag = False
 
                 servo_setpoint_prev = servo_setpoint
 
