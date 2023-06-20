@@ -113,6 +113,7 @@ while not keyboard_interrupt_flag:
             throttle_percentage = throttle_percentage_int / 100
             servo_setpoint = servo_setpoint_int / 100
 
+            logger.info(f"Servo Setpoint: {servo_setpoint} | Throttle_percentage: {throttle_percentage}")
             # Ensure that all data collection starts with servo setpoint at 1
             # If not, the interpolated data will be wrong and useless
             if servo_setpoint < starting_setpoint:
